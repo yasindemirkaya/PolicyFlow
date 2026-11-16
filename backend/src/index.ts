@@ -3,10 +3,9 @@ import express from "express";
 import healthRoutes from "./api/routes/health.routes.js";
 import notFoundMiddleware from "./middleware/not-found.middleware.js";
 import errorHandlerMiddleware from "./middleware/error.middleware.js";
+import { env } from "./config/env.js";
 
 const app = express();
-
-const PORT = 3000;
 
 // Middleware
 app.use(express.json());
@@ -21,6 +20,6 @@ app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`PolicyFlow API is running on port ${PORT}`);
+app.listen(env.port, () => {
+  console.log(`PolicyFlow API is running on port ${env.port}`);
 });
