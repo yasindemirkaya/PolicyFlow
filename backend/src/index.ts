@@ -1,10 +1,15 @@
 
 import express from "express";
-import healthRoutes from "./api/routes/health.routes.js";
+
+import connectDatabase from "./infrastructure/database.js";
+
 import notFoundMiddleware from "./middleware/not-found.middleware.js";
 import errorHandlerMiddleware from "./middleware/error.middleware.js";
-import connectDatabase from "./infrastructure/database.js";
+
 import { env } from "./config/env.js";
+
+import customerRoutes from "./api/routes/customer.routes.js";
+import healthRoutes from "./api/routes/health.routes.js";
 
 const app = express();
 
@@ -13,6 +18,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api", healthRoutes);
+app.use("/api/customers", customerRoutes);
 
 // 404 Middleware
 app.use(notFoundMiddleware);

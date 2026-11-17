@@ -1,5 +1,6 @@
 
 import { CustomerRepository } from "../repositories/customer.repository.js";
+import { Customer } from "../entities/customer.entity.js";
 
 export class CustomerService {
   constructor(
@@ -7,14 +8,8 @@ export class CustomerService {
   ) {}
 
   // Get customer by ID
-  async getCustomerById(id: string) {
-    const customer = await this.customerRepository.findById(id);
-
-    if (!customer) {
-      throw new Error("Customer not found");
-    }
-
-    return customer;
+  async getCustomerById(id: string): Promise<Customer | null> {
+    return this.customerRepository.findById(id);
   }
 
   // Get customer by email
