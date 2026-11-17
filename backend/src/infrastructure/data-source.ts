@@ -1,7 +1,9 @@
-
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { env } from "../config/env.js";
+
+import { Customer } from "../modules/customers/entities/customer.entity.js";
+import { CreateCustomersTable1794916088608 } from "./migrations/1794916088608-CreateCustomersTable.js";
 
 const AppDataSource = new DataSource({
   type: "postgres",
@@ -14,8 +16,8 @@ const AppDataSource = new DataSource({
   synchronize: false,
   logging: env.nodeEnv === "development",
 
-  entities: [],
-  migrations: []
+  entities: [Customer],
+  migrations: [CreateCustomersTable1794916088608],
 });
 
 export default AppDataSource;
