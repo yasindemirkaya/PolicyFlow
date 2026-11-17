@@ -49,4 +49,18 @@ export class Customer {
     type: "timestamptz"
   })
   createdAt!: Date;
+
+  @Column({
+    name: "national_id",
+    type: "varchar",
+    length: 11,
+    unique: true
+  })
+  nationalId!: string;
+
+  @Column({
+    name: "birth_date",
+    type: "date"
+  })
+  birthDate!: string;
 }

@@ -9,6 +9,7 @@ import { Product } from "../modules/products/entities/product.entity.js";
 import { CreateCustomersTable1794916088608 } from "./migrations/1794916088608-CreateCustomersTable.js";
 import { CreatePoliciesTable1794917662847 } from "./migrations/1794917662847-CreatePoliciesTable.js";
 import { CreateProductsTable1794923875538 } from "./migrations/1794923875538-CreateProductsTable.js";
+import { AddCustomerIdentityFields1794925418758 } from "./migrations/1794925418758-AddCustomerIdentityFields.js";
 
 const AppDataSource = new DataSource({
   type: "postgres",
@@ -25,7 +26,8 @@ const AppDataSource = new DataSource({
   migrations: [
     CreateCustomersTable1794916088608,
     CreatePoliciesTable1794917662847,
-    CreateProductsTable1794923875538
+    CreateProductsTable1794923875538,
+    AddCustomerIdentityFields1794925418758
   ],
 });
 
