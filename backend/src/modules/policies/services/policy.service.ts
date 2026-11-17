@@ -1,4 +1,5 @@
 
+import { Policy } from "../entities/policy.entity.js";
 import { PolicyRepository } from "../repositories/policy.repository.js";
 
 export class PolicyService {
@@ -6,24 +7,11 @@ export class PolicyService {
     private readonly policyRepository: PolicyRepository
   ) {}
 
-//   Get Policy By ID
-  async getPolicyById(id: string) {
-    const policy = await this.policyRepository.findById(id);
-
-    if (!policy) {
-      throw new Error("Policy not found");
-    }
-
-    return policy;
+  async getPolicyById(id: string): Promise<Policy | null> {
+    return this.policyRepository.findById(id);
   }
 
-//   Get Policy by Policy Number
-  async getPolicyByPolicyNumber(policyNumber: string) {
-    return this.policyRepository.findByPolicyNumber(policyNumber);
-  }
-
-//   Get Policies By Customer ID
-  async getPoliciesByCustomerId(customerId: string) {
+  async getPoliciesByCustomerId(customerId: string): Promise<Policy[]> {
     return this.policyRepository.findByCustomerId(customerId);
   }
 }

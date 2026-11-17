@@ -10,6 +10,7 @@ import { env } from "./config/env.js";
 
 import customerRoutes from "./api/routes/customer.routes.js";
 import healthRoutes from "./api/routes/health.routes.js";
+import policyRoutes from "./api/routes/policy.routes.js";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 // Routes
 app.use("/api", healthRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/policies", policyRoutes);
 
 // 404 Middleware
 app.use(notFoundMiddleware);
