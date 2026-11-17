@@ -1,13 +1,18 @@
-
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn
+  CreateDateColumn,
+  OneToMany
 } from "typeorm";
+
+import { Policy } from "../../policies/entities/policy.entity.js";
 
 @Entity("customers")
 export class Customer {
+  @OneToMany(() => Policy, (policy) => policy.customer)
+  policies!: Policy[];
+
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
