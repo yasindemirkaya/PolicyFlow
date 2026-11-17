@@ -1,13 +1,13 @@
 
-import mongoose from "mongoose";
-import { env } from "../config/env";
+import AppDataSource from "./data-source.js";
+
 const connectDatabase = async (): Promise<void> => {
   try {
-    await mongoose.connect(env.mongodbUri);
+    await AppDataSource.initialize();
 
-    console.log("MongoDB connected successfully.");
+    console.log("PostgreSQL connected successfully.");
   } catch (error) {
-    console.error("MongoDB connection failed:", error);
+    console.error("PostgreSQL connection failed:", error);
     process.exit(1);
   }
 };
