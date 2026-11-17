@@ -1,11 +1,26 @@
 
 import { Request, Response, NextFunction } from "express";
+
 import { PolicyRepository } from "../repositories/policy.repository.js";
-import { PolicyService } from "../services/policy.service.js";
+import {
+  PolicyService,
+  PolicyServiceError
+} from "../services/policy.service.js";
+
+import { CustomerRepository } from "../../customers/repositories/customer.repository.js";
+import {
+  CustomerService,
+  CustomerServiceError
+} from "../../customers/services/customer.service.js";
+
+import { ProductRepository } from "../../products/repositories/product.repository.js";
+import { IssuePolicyDto } from "../dto/issue-policy.dto.js";
 
 export class PolicyController {
   private policyService = new PolicyService(
-    new PolicyRepository()
+    new PolicyRepository(),
+    new CustomerService(new CustomerRepository()),
+    new ProductRepository()
   );
 
   // Get policy by ID
@@ -55,6 +70,40 @@ export class PolicyController {
         data: policies
       });
     } catch (error) {
+      next(error);
+    }
+  };
+
+  // Issue a new policy
+  issuePolicy = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const policy = await this.policyService.issuePolicy(
+        req.body as IssuePolicyDto
+      );
+
+      res.status(201).json({
+        success: true,
+        data: policy
+      });
+    } catch (error) {
+      if (
+        error instanceof PolicyServiceError ||
+        error instanceof CustomerServiceError
+      ) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message
+          }
+        });
+        return;
+      }
+
       next(error);
     }
   };
