@@ -122,7 +122,8 @@
       "supportReply": "Support Reply",
       "email": "Email",
       "inbox": "Inbox",
-      "inboxDetails": "Details"
+      "inboxDetails": "Details",
+      "insuranceProducts": "Insurance Products"
     },
     "widget": {
       "title": "#1 Tailwind CSS Dashboard",
@@ -864,6 +865,78 @@
         "completed": "Completed",
         "inProgress": "In Progress"
       }
+    }
+  },
+  "policyFlow": {
+    "insuranceProducts": {
+      "title": "Choose Your Insurance",
+      "description": "Select an insurance product to get started.",
+      "getQuote": "Get a Quote",
+      "comingSoon": "Coming Soon",
+      "vehicle": {
+        "title": "Vehicle Insurance",
+        "description": "Protect your vehicle with traffic or comprehensive insurance."
+      },
+      "home": {
+        "title": "Home Insurance",
+        "description": "Protect your home and belongings against unexpected events."
+      },
+      "health": {
+        "title": "Health Insurance",
+        "description": "Explore health insurance options for your needs."
+      }
+    },
+    "vehicleInsurance": {
+      "title": "Vehicle Insurance",
+      "description": "Choose the type of vehicle insurance you want to get a quote for.",
+      "select": "Select Insurance",
+      "traffic": {
+        "title": "Traffic Insurance",
+        "description": "Get coverage for your vehicle against third-party liabilities and accidents."
+      },
+      "kasko": {
+        "title": "Comprehensive Insurance (Kasko)",
+        "description": "Protect your own vehicle against accidents, theft, fire and other covered risks."
+      },
+      "trafficPage": {
+        "title": "Traffic Insurance",
+        "description": "Get a quote for compulsory third-party liability insurance.",
+        "formPlaceholder": "The traffic insurance quote form will be added here."
+      },
+      "comprehensivePage": {
+        "title": "Comprehensive Insurance (Kasko)",
+        "description": "Get a quote to protect your own vehicle against covered risks.",
+        "formPlaceholder": "The comprehensive insurance quote form will be added here."
+      }
+    },
+    "customerInformation": {
+      "trafficTitle": "Traffic Insurance",
+      "comprehensiveTitle": "Comprehensive Insurance (Kasko)",
+      "description": "Please provide your personal information to continue with your insurance quote.",
+      "sectionTitle": "Personal Information",
+      "sectionDescription": "Please enter your details accurately.",
+      "fields": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "nationalId": "Turkish ID Number",
+        "birthDate": "Date of Birth",
+        "email": "Email Address",
+        "phone": "Phone Number"
+      },
+      "placeholders": {
+        "firstName": "Enter your first name",
+        "lastName": "Enter your last name",
+        "nationalId": "Enter your 11-digit ID number",
+        "email": "Enter your email address",
+        "phone": "Enter your phone number"
+      },
+      "permissionsTitle": "Permissions and Acknowledgements",
+      "permissions": {
+        "kvkk": "I acknowledge that I have read the personal data protection information notice (KVKK).",
+        "commercial": "I agree to receive commercial electronic communications."
+      },
+      "continue": "Continue",
+      "validationSuccess": "Your information has passed the form validation. Customer registration will be connected in the next step."
     }
   }
 }

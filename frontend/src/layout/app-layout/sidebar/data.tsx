@@ -18,6 +18,11 @@ export const navItems: NavItem[] = [
     subItems: [{ key: "ecommerceHome", path: "/" }],
   },
   {
+    icon: <BoxIcon className="size-6" />,
+    key: "insuranceProducts",
+    path: "/insurance-products",
+  },
+  {
     icon: <CalendarIcon className="size-6" />,
     key: "calendar",
     path: "/calendar",
