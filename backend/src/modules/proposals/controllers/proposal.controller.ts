@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from "express";
 
 import { CustomerRepository } from "../../customers/repositories/customer.repository.js";
@@ -24,14 +25,15 @@ export class ProposalController {
     new ProductRepository(),
   );
 
+  // Create Vehicle Proposal
   createVehicleProposal = async (
-    req: Request,
+    req: Request<{}, {}, VehicleProposalDto>,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
     try {
       const result = await this.proposalService.createVehicleProposal(
-        req.body as VehicleProposalDto,
+        req.body,
       );
 
       this.sendSuccess(res, result);
@@ -40,6 +42,7 @@ export class ProposalController {
     }
   };
 
+  // Create House Proposal
   createHomeProposal = async (
     req: Request,
     res: Response,
@@ -56,6 +59,7 @@ export class ProposalController {
     }
   };
 
+  // Create Health Proposal
   createHealthProposal = async (
     req: Request,
     res: Response,
@@ -91,7 +95,11 @@ export class ProposalController {
     });
   }
 
-  private handleError(error: unknown, res: Response, next: NextFunction): void {
+  private handleError(
+    error: unknown,
+    res: Response,
+    next: NextFunction,
+  ): void {
     if (
       error instanceof ProposalServiceError ||
       error instanceof CustomerServiceError

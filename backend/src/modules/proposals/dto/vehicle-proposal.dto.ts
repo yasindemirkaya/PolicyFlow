@@ -1,12 +1,27 @@
-import { ApplicantDto } from "./applicant.dto.js";
 import { ProductSubType } from "../../products/enums/product-sub-type.enum.js";
 
+export type VehicleInformationDto =
+  | {
+      isNewVehicle: true;
+      brand: string;
+      model: string;
+      plate?: never;
+      registrationSerial?: never;
+      registrationNumber?: never;
+    }
+  | {
+      isNewVehicle: false;
+      plate: string;
+      registrationSerial: string;
+      registrationNumber: string;
+      brand: string;
+      model: string;
+    };
+
 export interface VehicleProposalDto {
-  applicant: ApplicantDto;
+  customerId: string;
+
   productSubType: ProductSubType.TRAFFIC | ProductSubType.INSURANCE;
 
-  vehicle: {
-    hasPlate: boolean;
-    plate?: string;
-  };
+  vehicleInformation: VehicleInformationDto;
 }

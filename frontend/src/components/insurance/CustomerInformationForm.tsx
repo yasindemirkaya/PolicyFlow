@@ -22,6 +22,9 @@ type FormFieldProps = {
 
 type CreateCustomerResponse = {
   success: boolean;
+  data?: {
+    id: string;
+  };
   error?: {
     code?: string;
     message?: string;
@@ -112,7 +115,16 @@ export default function CustomerInformationForm({
         );
       }
 
-      // Customer created successfully.
+      const customerId = result.data?.id;
+
+      if (!customerId) {
+        throw new Error(t("requestFailed"));
+      }
+
+      // Save customer and insurance information for the next steps.
+      sessionStorage.setItem("policyflow.customerId", customerId);
+      sessionStorage.setItem("policyflow.insuranceType", insuranceType);
+
       // Continue to the vehicle information step.
       router.push(
         `/insurance-products/vehicle-insurance/${insuranceType}/vehicle-information`,

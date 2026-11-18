@@ -6,7 +6,10 @@ import { ProductType } from "../../products/enums/product-type.enum.js";
 import { ProductSubType } from "../../products/enums/product-sub-type.enum.js";
 
 import { ApplicantDto } from "../dto/applicant.dto.js";
-import { VehicleProposalDto } from "../dto/vehicle-proposal.dto.js";
+import {
+  VehicleProposalDto,
+  VehicleInformationDto,
+} from "../dto/vehicle-proposal.dto.js";
 import { HouseProposalDto } from "../dto/house-proposal.dto.js";
 import { HealthProposalDto } from "../dto/health-proposal.dto.js";
 
@@ -30,7 +33,7 @@ export class ProposalService {
   constructor(
     private readonly customerService: CustomerService,
     private readonly productRepository: ProductRepository
-  ) { }
+  ) {}
 
   async createVehicleProposal(
     dto: VehicleProposalDto
@@ -46,23 +49,38 @@ export class ProposalService {
       );
     }
 
-    if (
-      !dto.vehicle ||
-      typeof dto.vehicle.hasPlate !== "boolean" ||
-      (dto.vehicle.hasPlate && !dto.vehicle.plate?.trim())
-    ) {
+    this.validateVehicleInformation(dto.vehicleInformation);
+
+    if (!dto.customerId?.trim()) {
       throw new ProposalServiceError(
         400,
         "VALIDATION_ERROR",
-        "Valid vehicle information is required"
+        "Customer ID is required"
       );
     }
 
-    return this.createProposal(
-      dto.applicant,
-      ProductType.VEHICLE,
-      dto.productSubType
+    const customer = await this.customerService.getCustomerById(
+      dto.customerId
     );
+
+    if (!customer) {
+      throw new ProposalServiceError(
+        404,
+        "CUSTOMER_NOT_FOUND",
+        "Customer not found"
+      );
+    }
+
+    const products =
+      await this.productRepository.findActiveByTypeAndSubType(
+        ProductType.VEHICLE,
+        dto.productSubType
+      );
+
+    return {
+      customerId: customer.id,
+      products
+    };
   }
 
   async createHomeProposal(
@@ -134,6 +152,45 @@ export class ProposalService {
       ProductType.HEALTH,
       dto.productSubType
     );
+  }
+
+  private validateVehicleInformation(
+    vehicle: VehicleInformationDto
+  ): void {
+    if (
+      !vehicle ||
+      !vehicle.brand?.trim() ||
+      !vehicle.model?.trim()
+    ) {
+      throw new ProposalServiceError(
+        400,
+        "VALIDATION_ERROR",
+        "Vehicle brand and model are required"
+      );
+    }
+
+    if (typeof vehicle.isNewVehicle !== "boolean") {
+      throw new ProposalServiceError(
+        400,
+        "VALIDATION_ERROR",
+        "Vehicle type information is required"
+      );
+    }
+
+    if (
+      !vehicle.isNewVehicle &&
+      (
+        !vehicle.plate?.trim() ||
+        !/^[A-Za-z]{2}$/.test(vehicle.registrationSerial) ||
+        !/^\d{6}$/.test(vehicle.registrationNumber)
+      )
+    ) {
+      throw new ProposalServiceError(
+        400,
+        "VALIDATION_ERROR",
+        "Valid plate and registration information are required"
+      );
+    }
   }
 
   private async createProposal(

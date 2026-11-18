@@ -2,7 +2,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
 type VehicleInformationFormProps = {
@@ -13,12 +14,42 @@ export default function VehicleInformationForm({
   insuranceType,
 }: VehicleInformationFormProps) {
   const t = useTranslations("policyFlow.vehicleInformation");
+  const router = useRouter();
+
   const [isNewVehicle, setIsNewVehicle] = useState(false);
 
   const backUrl =
     insuranceType === "traffic"
       ? "/insurance-products/vehicle-insurance/traffic"
       : "/insurance-products/vehicle-insurance/comprehensive";
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    const vehicleInformation = {
+      isNewVehicle,
+      plate: String(formData.get("plate") ?? "").trim(),
+      registrationSerial: String(
+        formData.get("registrationSerial") ?? "",
+      ).trim(),
+      registrationNumber: String(
+        formData.get("registrationNumber") ?? "",
+      ).trim(),
+      brand: String(formData.get("brand") ?? "").trim(),
+      model: String(formData.get("model") ?? "").trim(),
+    };
+
+    sessionStorage.setItem(
+      "policyflow.vehicleInformation",
+      JSON.stringify(vehicleInformation),
+    );
+
+    sessionStorage.setItem("policyflow.insuranceType", insuranceType);
+
+    router.push("/insurance-products/offers");
+  }
 
   return (
     <div className="space-y-6">
@@ -55,8 +86,10 @@ export default function VehicleInformationForm({
         </p>
       </div>
 
-      <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-6"
+      >
         {/* New Vehicle Selection */}
         <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
           <label className="flex cursor-pointer items-start gap-3">
@@ -86,7 +119,6 @@ export default function VehicleInformationForm({
           </h2>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
             {/* Plate */}
             <div className="md:col-span-2">
               <label
@@ -114,7 +146,7 @@ export default function VehicleInformationForm({
               )}
             </div>
 
-            {/* Registration fields: used vehicles only */}
+            {/* Registration fields */}
             {!isNewVehicle && (
               <>
                 <div>
@@ -205,7 +237,30 @@ export default function VehicleInformationForm({
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Continue */}
+        <div className="flex justify-end border-t border-gray-200 pt-5 dark:border-gray-800">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 text-sm font-medium text-white transition hover:bg-brand-600"
+          >
+            {t("continue")}
+
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14m-6-6 6 6-6 6" />
+            </svg>
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

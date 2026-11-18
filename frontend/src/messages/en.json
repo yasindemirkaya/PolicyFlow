@@ -947,6 +947,7 @@
       "comprehensiveTitle": "Comprehensive Insurance - Vehicle Information",
       "description": "Please provide your vehicle details.",
       "backToCustomerInformation": "Back to Customer Information",
+      "continue": "Continue",
       "newVehicleLabel": "My vehicle is brand new and does not have a license plate yet.",
       "newVehicleDescription": "Select this option if you have purchased a new vehicle and have not received its license plate yet.",
       "sectionTitle": "Vehicle Details",
