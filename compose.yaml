@@ -25,6 +25,41 @@ services:
 
     init: true
 
+    networks:
+      - policyflow-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend/Dockerfile.dev
+
+    working_dir: /app
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DB_HOST: policyflow-postgres
+      DB_PORT: "5432"
+
+    command: npm run dev
+
+    init: true
+
+    networks:
+      - policyflow-network
+
 volumes:
   frontend_node_modules:
   frontend_next:
+  backend_node_modules:
+
+networks:
+  policyflow-network:
+    external: true
