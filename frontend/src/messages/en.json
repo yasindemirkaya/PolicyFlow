@@ -966,6 +966,33 @@
         "brand": "Enter vehicle brand",
         "model": "Enter vehicle model"
       }
+    },
+    "offers": {
+      "title": "Insurance Offers",
+      "groups": {
+        "vehicle": "Vehicle Insurance",
+        "health": "Health Insurance"
+      },
+      "types": {
+        "traffic": "Traffic",
+        "comprehensive": "Comprehensive",
+        "travel": "Travel"
+      },
+      "back": "Back to Vehicle Information",
+      "description": "Compare the available insurance offers and choose the one that suits you.",
+      "loadingTitle": "Preparing Your Offers",
+      "loadingDescription": "We are collecting offers from insurance companies. Please wait...",
+      "offerCount": "{count, plural, one {# offer found} other {# offers found}}",
+      "price": "Premium",
+      "purchase": "Purchase",
+      "selected": "Selected",
+      "selectionSaved": "Your selected offer has been saved. The purchase process will continue in the next step.",
+      "emptyTitle": "No Offers Found",
+      "emptyDescription": "No available insurance offers were found for your selection.",
+      "requestFailed": "We could not retrieve insurance offers. Please try again.",
+      "missingInformation": "Your quote session information is missing. Please start again.",
+      "invalidInsuranceType": "Invalid insurance type.",
+      "retry": "Try Again"
     }
   }
 }
