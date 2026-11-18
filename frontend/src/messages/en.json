@@ -890,6 +890,7 @@
       "title": "Vehicle Insurance",
       "description": "Choose the type of vehicle insurance you want to get a quote for.",
       "select": "Select Insurance",
+      "backToInsuranceProducts": "Back to Insurance Products",
       "traffic": {
         "title": "Traffic Insurance",
         "description": "Get coverage for your vehicle against third-party liabilities and accidents."
@@ -914,6 +915,7 @@
       "comprehensiveTitle": "Comprehensive Insurance (Kasko)",
       "description": "Please provide your personal information to continue with your insurance quote.",
       "sectionTitle": "Personal Information",
+      "backToVehicleInsurance": "Back to Vehicle Insurance",
       "sectionDescription": "Please enter your details accurately.",
       "fields": {
         "firstName": "First Name",

@@ -48,21 +48,43 @@ function InsuranceIcon({ type }: InsuranceIconProps) {
 export default async function VehicleInsurancePage() {
   const t = await getTranslations("policyFlow.vehicleInsurance");
 
-    const products = [
+  const products = [
     {
-        key: "traffic" as const,
-        icon: "traffic" as const,
-        href: "/insurance-products/vehicle-insurance/traffic",
+      key: "traffic" as const,
+      icon: "traffic" as const,
+      href: "/insurance-products/vehicle-insurance/traffic",
     },
     {
-        key: "kasko" as const,
-        icon: "kasko" as const,
-        href: "/insurance-products/vehicle-insurance/comprehensive",
+      key: "kasko" as const,
+      icon: "kasko" as const,
+      href: "/insurance-products/vehicle-insurance/comprehensive",
     },
-    ];
+  ];
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <Link
+        href="/insurance-products"
+        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"
+      >
+        <svg
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m15 18-6-6 6-6" />
+          <path d="M20 12H9" />
+        </svg>
+
+        {t("backToInsuranceProducts")}
+      </Link>
+
       <div>
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
           {t("title")}
@@ -73,46 +95,46 @@ export default async function VehicleInsurancePage() {
         </p>
       </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {products.map((product) => (
-            <Link
+          <Link
             key={product.key}
             href={product.href}
             className="group flex min-h-64 flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm transition hover:-translate-y-1 hover:border-brand-500 hover:shadow-theme-md dark:border-gray-800 dark:bg-white/[0.03]"
-            >
+          >
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
-                <InsuranceIcon type={product.icon} />
+              <InsuranceIcon type={product.icon} />
             </div>
 
             <div className="mt-5">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
                 {t(`${product.key}.title`)}
-                </h2>
+              </h2>
 
-                <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
                 {t(`${product.key}.description`)}
-                </p>
+              </p>
             </div>
 
             <div className="mt-auto flex items-center justify-between pt-6">
-                <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
+              <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
                 {t("select")}
-                </span>
+              </span>
 
-                <svg
+              <svg
                 className="h-5 w-5 text-brand-600 transition-transform group-hover:translate-x-1 dark:text-brand-400"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
                 aria-hidden="true"
-                >
+              >
                 <path d="M5 12h14m-6-6 6 6-6 6" />
-                </svg>
+              </svg>
             </div>
-            </Link>
+          </Link>
         ))}
-        </div>
+      </div>
     </div>
   );
 }

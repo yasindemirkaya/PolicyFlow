@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { CustomerRepository } from "../repositories/customer.repository.js";
-import { CustomerService } from "../services/customer.service.js";
+import {
+  CustomerService,
+  CustomerServiceError,
+} from "../services/customer.service.js";
 
 export class CustomerController {
   private customerService = new CustomerService(new CustomerRepository());
@@ -74,6 +77,42 @@ export class CustomerController {
         data: customer,
       });
     } catch (error) {
+      next(error);
+    }
+  };
+
+  // Create Customer
+  createCustomer = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const customer = await this.customerService.findOrCreateCustomer({
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        nationalId: req.body.nationalId,
+        birthDate: req.body.birthDate,
+        email: req.body.email,
+        phone: req.body.phone,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: customer,
+      });
+    } catch (error) {
+      if (error instanceof CustomerServiceError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        });
+        return;
+      }
+
       next(error);
     }
   };
