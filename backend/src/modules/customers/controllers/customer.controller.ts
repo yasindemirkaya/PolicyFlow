@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from "express";
 import { CustomerRepository } from "../repositories/customer.repository.js";
 import {
@@ -8,7 +9,7 @@ import {
 export class CustomerController {
   private customerService = new CustomerService(new CustomerRepository());
 
-  //   Get Customer By ID
+  // Get Customer By ID
   getCustomerById = async (
     req: Request<{ id: string }>,
     res: Response,
@@ -39,7 +40,7 @@ export class CustomerController {
     }
   };
 
-  //   Get Customer By Email
+  // Get Customer By Email
   getCustomerByEmail = async (
     req: Request,
     res: Response,
@@ -88,7 +89,7 @@ export class CustomerController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const customer = await this.customerService.findOrCreateCustomer({
+      const result = await this.customerService.findOrCreateCustomer({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         nationalId: req.body.nationalId,
@@ -97,9 +98,12 @@ export class CustomerController {
         phone: req.body.phone,
       });
 
-      res.status(201).json({
+      res.status(result.created ? 201 : 200).json({
         success: true,
-        data: customer,
+        data: result.customer,
+        message: result.created
+          ? "Customer created successfully"
+          : "Existing customer found",
       });
     } catch (error) {
       if (error instanceof CustomerServiceError) {

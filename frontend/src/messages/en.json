@@ -917,6 +917,8 @@
       "sectionTitle": "Personal Information",
       "backToVehicleInsurance": "Back to Vehicle Insurance",
       "sectionDescription": "Please enter your details accurately.",
+      "submitting": "Submitting...",
+      "requestFailed": "Unable to save customer information. Please try again.",
       "fields": {
         "firstName": "First Name",
         "lastName": "Last Name",
@@ -939,6 +941,30 @@
       },
       "continue": "Continue",
       "validationSuccess": "Your information has passed the form validation. Customer registration will be connected in the next step."
+    },
+    "vehicleInformation": {
+      "trafficTitle": "Traffic Insurance - Vehicle Information",
+      "comprehensiveTitle": "Comprehensive Insurance - Vehicle Information",
+      "description": "Please provide your vehicle details.",
+      "backToCustomerInformation": "Back to Customer Information",
+      "newVehicleLabel": "My vehicle is brand new and does not have a license plate yet.",
+      "newVehicleDescription": "Select this option if you have purchased a new vehicle and have not received its license plate yet.",
+      "sectionTitle": "Vehicle Details",
+      "plateDisabledDescription": "License plate information is not required for a new vehicle.",
+      "fields": {
+        "plate": "License Plate",
+        "registrationSerial": "Registration Serial",
+        "registrationNumber": "Registration Number",
+        "brand": "Vehicle Brand",
+        "model": "Vehicle Model"
+      },
+      "placeholders": {
+        "plate": "e.g. 34 ABC 123",
+        "registrationSerial": "Two letters",
+        "registrationNumber": "Six digits",
+        "brand": "Enter vehicle brand",
+        "model": "Enter vehicle model"
+      }
     }
   }
 }

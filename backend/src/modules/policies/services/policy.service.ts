@@ -67,9 +67,9 @@ export class PolicyService {
       );
     }
 
-    const customer = await this.customerService.findOrCreateCustomer(
-      dto.applicant,
-    );
+  const { customer } = await this.customerService.findOrCreateCustomer(
+    dto.applicant,
+  );
 
     const endDate = this.calculateEndDate(dto.startDate);
 

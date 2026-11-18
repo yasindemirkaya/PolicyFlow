@@ -1,6 +1,12 @@
+
 import { Customer } from "../entities/customer.entity.js";
 import { CustomerRepository } from "../repositories/customer.repository.js";
 import { CreateCustomerDto } from "../dto/create-customer.dto.js";
+
+export interface FindOrCreateCustomerResult {
+  customer: Customer;
+  created: boolean;
+}
 
 export class CustomerServiceError extends Error {
   constructor(
@@ -28,28 +34,60 @@ export class CustomerService {
 
   async findOrCreateCustomer(
     data: CreateCustomerDto
-  ): Promise<Customer> {
-    this.validateApplicant(data);
+  ): Promise<FindOrCreateCustomerResult> {
+    const normalizedData: CreateCustomerDto = {
+      ...data,
+      firstName: data.firstName?.trim(),
+      lastName: data.lastName?.trim(),
+      nationalId: data.nationalId?.trim(),
+      birthDate: data.birthDate?.trim(),
+      email: data.email?.trim().toLowerCase(),
+      phone: data.phone?.trim() || undefined,
+    };
 
-    const existingCustomer =
-      await this.customerRepository.findByNationalId(data.nationalId);
+    this.validateApplicant(normalizedData);
 
-    if (existingCustomer) {
-      return existingCustomer;
-    }
+    const [existingByNationalId, existingByEmail] = await Promise.all([
+      this.customerRepository.findByNationalId(
+        normalizedData.nationalId
+      ),
+      this.customerRepository.findByEmail(
+        normalizedData.email
+      ),
+    ]);
 
-    const existingEmail =
-      await this.customerRepository.findByEmail(data.email);
-
-    if (existingEmail) {
+    // National ID and email belong to different customers.
+    if (
+      existingByNationalId &&
+      existingByEmail &&
+      existingByNationalId.id !== existingByEmail.id
+    ) {
       throw new CustomerServiceError(
         409,
-        "EMAIL_ALREADY_EXISTS",
-        "Email address is already associated with another customer"
+        "CUSTOMER_INFORMATION_CONFLICT",
+        "The national ID number and email address are associated with different customers."
       );
     }
 
-    return this.customerRepository.create(data);
+    // Customer already exists with either national ID or email.
+    const existingCustomer =
+      existingByNationalId ?? existingByEmail;
+
+    if (existingCustomer) {
+      return {
+        customer: existingCustomer,
+        created: false,
+      };
+    }
+
+    // Neither national ID nor email exists. Create a new customer.
+    const customer =
+      await this.customerRepository.create(normalizedData);
+
+    return {
+      customer,
+      created: true,
+    };
   }
 
   private validateApplicant(data: CreateCustomerDto): void {

@@ -1,8 +1,10 @@
+
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type HTMLInputTypeAttribute } from "react";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 
 type CustomerInformationFormProps = {
   insuranceType: "traffic" | "comprehensive";
@@ -17,6 +19,17 @@ type FormFieldProps = {
   pattern?: string;
   inputMode?: "numeric" | "tel" | "text";
 };
+
+type CreateCustomerResponse = {
+  success: boolean;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 function FormField({
   id,
@@ -55,19 +68,63 @@ export default function CustomerInformationForm({
   insuranceType,
 }: CustomerInformationFormProps) {
   const t = useTranslations("policyFlow.customerInformation");
-  const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    // Customer API integration will be added in the next step.
-    setSubmitted(true);
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const pageTitle =
     insuranceType === "traffic"
       ? t("trafficTitle")
       : t("comprehensiveTitle");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    const formData = new FormData(event.currentTarget);
+
+    const customerData = {
+      firstName: String(formData.get("firstName") ?? "").trim(),
+      lastName: String(formData.get("lastName") ?? "").trim(),
+      nationalId: String(formData.get("nationalId") ?? "").trim(),
+      birthDate: String(formData.get("birthDate") ?? ""),
+      email: String(formData.get("email") ?? "").trim(),
+      phone: String(formData.get("phone") ?? "").trim(),
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(customerData),
+      });
+
+      const result = (await response.json()) as CreateCustomerResponse;
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error?.message || t("requestFailed"),
+        );
+      }
+
+      // Customer created successfully.
+      // Continue to the vehicle information step.
+      router.push(
+        `/insurance-products/vehicle-insurance/${insuranceType}/vehicle-information`,
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : t("requestFailed"),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -194,21 +251,22 @@ export default function CustomerInformationForm({
           </div>
         </div>
 
-        {submitted && (
+        {errorMessage && (
           <div
-            role="status"
-            className="rounded-lg bg-success-50 px-4 py-3 text-sm text-success-700 dark:bg-success-500/10 dark:text-success-400"
+            role="alert"
+            className="rounded-lg bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
           >
-            {t("validationSuccess")}
+            {errorMessage}
           </div>
         )}
 
         <div className="flex justify-end border-t border-gray-200 pt-5 dark:border-gray-800">
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-500 px-6 text-sm font-medium text-white transition hover:bg-brand-600"
+            disabled={isSubmitting}
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-500 px-6 text-sm font-medium text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {t("continue")}
+            {isSubmitting ? t("submitting") : t("continue")}
           </button>
         </div>
       </form>

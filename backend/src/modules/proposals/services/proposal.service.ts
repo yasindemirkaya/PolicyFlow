@@ -30,7 +30,7 @@ export class ProposalService {
   constructor(
     private readonly customerService: CustomerService,
     private readonly productRepository: ProductRepository
-  ) {}
+  ) { }
 
   async createVehicleProposal(
     dto: VehicleProposalDto
@@ -141,7 +141,7 @@ export class ProposalService {
     productType: ProductType,
     productSubType: ProductSubType
   ): Promise<ProposalResult> {
-    const customer =
+    const { customer } =
       await this.customerService.findOrCreateCustomer(applicant);
 
     const products =
