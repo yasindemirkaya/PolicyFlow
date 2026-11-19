@@ -992,7 +992,47 @@
       "requestFailed": "We could not retrieve insurance offers. Please try again.",
       "missingInformation": "Your quote session information is missing. Please start again.",
       "invalidInsuranceType": "Invalid insurance type.",
-      "retry": "Try Again"
+      "retry": "Try Again",
+      "selectionFailed": "Selected offer could not be found. Please try again."
+    },
+    "payment": {
+      "title": "Payment",
+      "description": "Review your selected insurance offer before proceeding with payment.",
+      "backToOffers": "Back to Offers",
+      "selectedOffer": "Selected Insurance Offer",
+      "insuranceCompany": "Insurance Company",
+      "product": "Insurance Product",
+      "productCode": "Product Code",
+      "premium": "Total Premium",
+      "loading": "Loading selected offer...",
+      "noOfferSelected": "No offer selected. Please select an insurance offer first.",
+      "paymentFormComingSoon": "Payment details and 3D Secure verification will be available in the next step.",
+      "cardDetails": "Card Details",
+      "cardDescription": "Enter your card information to continue.",
+      "cardHolderName": "Cardholder Name",
+      "cardHolderPlaceholder": "Name as shown on card",
+      "cardNumber": "Card Number",
+      "expiryDate": "Expiration Date",
+      "cvv": "CVV",
+      "demoPaymentNotice": "This is a demo payment form. Do not enter real card details. No actual payment will be made.",
+      "invalidCardNumber": "Please enter a valid card number.",
+      "unsupportedCard": "Only demo Visa and Mastercard numbers are supported.",
+      "invalidExpiryDate": "Please enter the expiration date in MM/YY format.",
+      "invalidCvv": "Please enter a valid CVV.",
+      "cardValidationSuccess": "Card details validated successfully. The 3D Secure simulation is the next step.",
+      "validateCardDetails": "Validate Card Details"
+    },
+    "threeDSecure": {
+      "title": "3D Secure Verification",
+      "description": "Your bank requires an additional verification step to complete this transaction.",
+      "cardHolder": "Cardholder",
+      "card": "Payment Card",
+      "approve": "Approve Payment",
+      "decline": "Decline Payment",
+      "processing": "Verifying...",
+      "demoNotice": "This is a simulated 3D Secure verification. No real bank connection is used.",
+      "backToPayment": "Back to Payment",
+      "sessionError": "Payment session information could not be found."
     }
   }
 }

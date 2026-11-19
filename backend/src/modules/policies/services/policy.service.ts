@@ -1,3 +1,4 @@
+
 import { randomUUID } from "node:crypto";
 
 import { Policy } from "../entities/policy.entity.js";
@@ -43,13 +44,16 @@ export class PolicyService {
   // Issue Policy
   async issuePolicy(dto: IssuePolicyDto): Promise<Policy> {
     this.validatePayment(dto.payment);
-    this.validateStartDate(dto.startDate);
 
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        dto.productId,
-      )
-    ) {
+    if (!this.isValidUuid(dto.customerId)) {
+      throw new PolicyServiceError(
+        400,
+        "VALIDATION_ERROR",
+        "Invalid customer ID",
+      );
+    }
+
+    if (!this.isValidUuid(dto.productId)) {
       throw new PolicyServiceError(
         400,
         "VALIDATION_ERROR",
@@ -57,7 +61,23 @@ export class PolicyService {
       );
     }
 
-    const product = await this.productRepository.findActiveById(dto.productId);
+    // Find the existing customer
+    const customer = await this.customerService.getCustomerById(
+      dto.customerId,
+    );
+
+    if (!customer) {
+      throw new PolicyServiceError(
+        404,
+        "CUSTOMER_NOT_FOUND",
+        "Customer not found",
+      );
+    }
+
+    // Find the selected product
+    const product = await this.productRepository.findActiveById(
+      dto.productId,
+    );
 
     if (!product) {
       throw new PolicyServiceError(
@@ -67,12 +87,10 @@ export class PolicyService {
       );
     }
 
-  const { customer } = await this.customerService.findOrCreateCustomer(
-    dto.applicant,
-  );
+    // Set policy start date when the issue request is processed.
+    const startDate = this.getCurrentDate();
 
-    const endDate = this.calculateEndDate(dto.startDate);
-
+    const endDate = this.calculateEndDate(startDate);
     const policyNumber = this.generatePolicyNumber();
 
     return this.policyRepository.create({
@@ -80,12 +98,35 @@ export class PolicyService {
       customer,
       policyType: this.mapProductType(product.productType),
       premiumAmount: product.basePrice,
-      startDate: dto.startDate,
+      startDate,
       endDate,
       status: PolicyStatus.ACTIVE,
       insuranceCompanyName: product.insuranceCompanyName,
       productName: product.productName,
     });
+  }
+
+  // Validate UUID
+  private isValidUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    );
+  }
+
+  // Get current date in Turkey
+  private getCurrentDate(): string {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+
+    const dateParts = Object.fromEntries(
+      parts.map((part) => [part.type, part.value]),
+    );
+
+    return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
   }
 
   // Validate Payment
@@ -114,40 +155,15 @@ export class PolicyService {
     }
   }
 
-  // Validate Start Date
-  private validateStartDate(startDate: string): void {
-    if (
-      typeof startDate !== "string" ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(startDate)
-    ) {
-      throw new PolicyServiceError(
-        400,
-        "VALIDATION_ERROR",
-        "Invalid policy start date",
-      );
-    }
-
-    const date = new Date(`${startDate}T00:00:00.000Z`);
-
-    if (
-      Number.isNaN(date.getTime()) ||
-      date.toISOString().slice(0, 10) !== startDate
-    ) {
-      throw new PolicyServiceError(
-        400,
-        "VALIDATION_ERROR",
-        "Invalid policy start date",
-      );
-    }
-  }
-
   // Calculate End Date
   private calculateEndDate(startDate: string): string {
     const [year, month, day] = startDate.split("-").map(Number);
 
     const nextYear = year + 1;
 
-    const lastDayOfMonth = new Date(Date.UTC(nextYear, month, 0)).getUTCDate();
+    const lastDayOfMonth = new Date(
+      Date.UTC(nextYear, month, 0),
+    ).getUTCDate();
 
     const endDay = Math.min(day, lastDayOfMonth);
 
@@ -157,6 +173,7 @@ export class PolicyService {
   // Generate Policy Number
   private generatePolicyNumber(): string {
     const year = new Date().getFullYear();
+
     const uniqueCode = randomUUID()
       .replace(/-/g, "")
       .substring(0, 12)

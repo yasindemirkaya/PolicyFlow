@@ -1,11 +1,7 @@
-import { ApplicantDto } from "../../proposals/dto/applicant.dto.js";
-
 export interface IssuePolicyDto {
-  applicant: ApplicantDto;
+  customerId: string;
 
   productId: string;
-
-  startDate: string;
 
   payment: {
     cardHolderName: string;

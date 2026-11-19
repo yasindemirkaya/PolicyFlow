@@ -205,12 +205,28 @@ export default function OffersPage() {
   }, [t]);
 
   const handlePurchase = (productId: string) => {
-    sessionStorage.setItem(
-      "policyflow.selectedProductId",
-      productId,
+    const selectedOffer = offers.find(
+      (offer) => offer.id === productId,
     );
 
-    setSelectedProductId(productId);
+    if (!selectedOffer) {
+      setErrorMessage(t("selectionFailed"));
+      return;
+    }
+
+    sessionStorage.setItem(
+      "policyflow.selectedProductId",
+      selectedOffer.id,
+    );
+
+    sessionStorage.setItem(
+      "policyflow.selectedOffer",
+      JSON.stringify(selectedOffer),
+    );
+
+    setSelectedProductId(selectedOffer.id);
+
+    router.push("/insurance-products/payment");
   };
 
   const currentConfig = insuranceType
@@ -247,8 +263,8 @@ export default function OffersPage() {
           <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
             {currentConfig
               ? `${t(`groups.${currentConfig.group}`)} - ${t(
-                  `types.${currentConfig.type}`,
-                )}`
+                `types.${currentConfig.type}`,
+              )}`
               : t("title")}
           </h1>
 
