@@ -1033,6 +1033,45 @@
       "demoNotice": "This is a simulated 3D Secure verification. No real bank connection is used.",
       "backToPayment": "Back to Payment",
       "sessionError": "Payment session information could not be found."
+    },
+    "paymentReturn": {
+      "title": "Completing Your Purchase",
+      "processing": "Your payment verification was successful. We are issuing your insurance policy.",
+      "paymentVerificationFailed": "3D Secure verification was unsuccessful.",
+      "missingInformation": "Required purchase information is missing or invalid. Please restart the purchase process.",
+      "alreadyProcessing": "A policy issue request is already being processed. Please do not submit the purchase again.",
+      "issueFailed": "Your insurance policy could not be issued.",
+      "issueRequestFailed": "We could not complete your purchase due to a connection error.",
+      "doNotClose": "Please do not close or refresh this page."
+    },
+    "paymentThankYou": {
+      "title": "Your Policy Has Been Issued!",
+      "description": "Thank you for your purchase. Your insurance policy has been successfully created.",
+      "policyStatus": "Policy Status",
+      "active": "Active",
+      "policyNumber": "Policy Number",
+      "product": "Insurance Product",
+      "insuranceCompany": "Insurance Company",
+      "premium": "Premium Amount",
+      "startDate": "Policy Start Date",
+      "endDate": "Policy End Date",
+      "demoNotice": "This is a PolicyFlow demo. No real payment has been processed.",
+      "backToProducts": "Back to Insurance Products",
+      "detailsUnavailableTitle": "Policy Details Unavailable",
+      "detailsUnavailableDescription": "We could not load your policy details. Please check your purchase status."
+    },
+    "paymentError": {
+      "paymentFailedTitle": "Payment Verification Failed",
+      "paymentFailedDescription": "Your 3D Secure verification was unsuccessful. You can return to the payment page and try again.",
+      "issueFailedTitle": "Policy Issuance Failed",
+      "issueFailedDescription": "We could not complete your policy issuance. Please return to the offers page and review your purchase.",
+      "unknownErrorTitle": "Something Went Wrong",
+      "unknownErrorDescription": "An unexpected error occurred while completing your purchase. Please return to the insurance products page.",
+      "tryPaymentAgain": "Try Payment Again",
+      "backToOffers": "Back to Offers",
+      "backToProducts": "Back to Insurance Products",
+      "referenceCode": "Error Reference",
+      "demoNotice": "This is a PolicyFlow demo. The payment process is simulated and no real bank transaction is performed."
     }
   }
 }
