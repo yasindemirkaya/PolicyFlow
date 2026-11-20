@@ -1,6 +1,9 @@
 import "reflect-metadata";
 import express from "express";
 
+import { env } from "./config/env.js";
+import connectDatabase from "./infrastructure/database.js";
+
 const app = express();
 
 // Middleware
@@ -18,10 +21,20 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// Server Configuration
-const PORT = Number(process.env.PORT) || 3000;
-
 // Start Server
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Customer Service is running on port ${PORT}`);
-});
+const startServer = async (): Promise<void> => {
+  try {
+    await connectDatabase();
+
+    app.listen(env.port, "0.0.0.0", () => {
+      console.log(
+        `Customer Service is running on port ${env.port}`,
+      );
+    });
+  } catch (error) {
+    console.error("Customer Service startup failed:", error);
+    process.exit(1);
+  }
+};
+
+void startServer();
