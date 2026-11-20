@@ -3,11 +3,34 @@ import express from "express";
 
 import { env } from "./config/env.js";
 import connectDatabase from "./infrastructure/database.js";
+import customerRoutes from "./routes/customer.routes.js";
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Global Request Logger
+app.use((req, _res, next) => {
+  console.log(
+    `[INCOMING REQUEST] ${req.method} ${req.originalUrl}`,
+  );
+  next();
+});
+
+// Customer Routes Logger
+app.use(
+  "/api/customers",
+  (req, _res, next) => {
+    console.log(
+      `[CUSTOMER ROUTE MATCHED] ${req.method} ${req.originalUrl}`,
+    );
+    next();
+  },
+  customerRoutes,
+);
+
+console.log("[ROUTES] Customer routes registered");
 
 // Health Check
 app.get("/health", (_req, res) => {
