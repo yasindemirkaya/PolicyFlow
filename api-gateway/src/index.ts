@@ -1,8 +1,17 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:3001",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 const PORT = Number(process.env.PORT ?? 3000);
 
