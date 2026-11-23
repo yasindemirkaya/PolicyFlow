@@ -28,3 +28,6 @@ Thumbs.db
 data/
 mongodb-data/
 rabbitmq-data/
+
+# Integration Service gizli environment dosyasını Git dışında tutar.
+/services/integration-service/.env
