@@ -10,6 +10,8 @@ import policyRoutes from "./routes/policy.routes.js";
 import { PolicyServiceError } from "./services/policy.service.js";
 import { ServiceClientError } from "./clients/service-client.error.js";
 
+import { startOutboxWorker } from "./workers/outbox.worker.js";
+
 const app = express();
 
 // Middleware
@@ -78,8 +80,13 @@ app.use(
 // Start Server
 const startServer = async (): Promise<void> => {
   try {
+    // PostgreSQL bağlantısını kurar.
     await connectDatabase();
 
+    // Outbox Worker'ı arka planda başlatır.
+    startOutboxWorker();
+
+    // HTTP sunucusunu başlatır.
     app.listen(env.port, "0.0.0.0", () => {
       console.log(
         `Policy Service is running on port ${env.port}`,

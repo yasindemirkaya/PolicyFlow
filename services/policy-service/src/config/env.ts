@@ -31,6 +31,7 @@ const getNumberEnv = (
   return parsedValue;
 };
 
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: getNumberEnv("PORT", 3000),
@@ -41,6 +42,15 @@ export const env = {
     username: getRequiredEnv("DB_USERNAME"),
     password: getRequiredEnv("DB_PASSWORD"),
     name: getRequiredEnv("DB_NAME"),
+  },
+
+  // RabbitMQ bağlantı bilgilerini merkezi environment yapılandırmasına ekler.
+  rabbitmq: {
+    host: process.env.RABBITMQ_HOST || "policyflow-rabbitmq",
+    port: Number(process.env.RABBITMQ_PORT) || 5672,
+    username: process.env.RABBITMQ_USERNAME || "",
+    password: process.env.RABBITMQ_PASSWORD || "",
+    vhost: process.env.RABBITMQ_VHOST || "policyflow",
   },
 
   customerServiceUrl: getRequiredEnv("CUSTOMER_SERVICE_URL"),

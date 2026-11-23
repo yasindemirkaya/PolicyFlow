@@ -28,7 +28,7 @@ export class PolicyService {
     private readonly policyRepository: PolicyRepository,
     private readonly customerClient: CustomerServiceClient,
     private readonly productClient: ProductServiceClient,
-  ) {}
+  ) { }
 
   // Get policy by ID
   async getPolicyById(id: string): Promise<Policy | null> {
@@ -76,17 +76,44 @@ export class PolicyService {
     const endDate = this.calculateEndDate(startDate);
     const policyNumber = this.generatePolicyNumber(startDate);
 
-    return this.policyRepository.create({
-      policyNumber,
-      customerId: customer.id,
-      policyType: this.mapProductType(product.productType),
-      premiumAmount: product.basePrice,
-      startDate,
-      endDate,
-      status: PolicyStatus.ACTIVE,
-      insuranceCompanyName: product.insuranceCompanyName,
-      productName: product.productName,
-    });
+    // Poliçeyi ve ilgili event'i aynı database transaction içerisinde kaydeder.
+    return this.policyRepository.createWithOutbox(
+      {
+        policyNumber,
+        customerId: customer.id,
+        policyType: this.mapProductType(product.productType),
+        premiumAmount: product.basePrice,
+        startDate,
+        endDate,
+        status: PolicyStatus.ACTIVE,
+        insuranceCompanyName: product.insuranceCompanyName,
+        productName: product.productName,
+      },
+      {
+        // Oluşturulan event'in türünü ve RabbitMQ routing key değerini belirler.
+        eventType: "policy.issued",
+        routingKey: "policy.issued",
+
+        // Kaydedilen poliçe ve müşteri bilgileriyle event içeriğini hazırlar.
+        buildPayload: (policy) => ({
+          event: "policy.issued",
+          data: {
+            policyId: policy.id,
+            policyNumber: policy.policyNumber,
+            customerId: policy.customerId,
+            customerName: `${customer.firstName} ${customer.lastName}`,
+            phoneNumber: customer.phone,
+            email: customer.email,
+            policyType: policy.policyType,
+            premiumAmount: policy.premiumAmount,
+            startDate: policy.startDate,
+            endDate: policy.endDate,
+            insuranceCompanyName: policy.insuranceCompanyName,
+            productName: policy.productName,
+          },
+        }),
+      },
+    );
   }
 
   // Validate UUID
