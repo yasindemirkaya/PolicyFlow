@@ -36,7 +36,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
-    command: sleep infinity
+    # Container başladığında Customer Service uygulamasını çalıştırır.
+    command: npm run dev
     init: true
     networks:
       - policyflow-network
@@ -55,7 +56,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
-    command: sleep infinity
+    # Container başladığında Product Service uygulamasını çalıştırır.
+    command: npm run dev
     init: true
     networks:
       - policyflow-network
@@ -74,7 +76,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
-    command: sleep infinity
+    # Container başladığında Proposal Service uygulamasını çalıştırır.
+    command: npm run dev
     init: true
     networks:
       - policyflow-network
@@ -93,7 +96,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
-    command: sleep infinity
+    # Container başladığında Policy Service uygulamasını çalıştırır.
+    command: npm run dev
     init: true
     networks:
       - policyflow-network
@@ -115,6 +119,7 @@ services:
       RABBITMQ_HOST: policyflow-rabbitmq
       RABBITMQ_PORT: "5672"
       RABBITMQ_VHOST: policyflow
+    # Container başladığında Integration Service uygulamasını ve Consumer'ları çalıştırır.
     command: npm run dev
     init: true
     networks:
@@ -134,7 +139,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
-    command: sleep infinity
+    # Container başladığında API Gateway uygulamasını çalıştırır.
+    command: npm run dev
     init: true
     networks:
       - policyflow-network
