@@ -1,16 +1,30 @@
 // RabbitMQ bağlantı kütüphanesini içe aktarır.
 import amqp from "amqplib";
 
-// RabbitMQ bağlantı ve kanal tiplerini içe aktarır.
-import type { Channel, ChannelModel } from "amqplib";
+// Benzersiz yayınlama kimliği oluşturmak için kullanılır.
+import { randomUUID } from "node:crypto";
+
+// RabbitMQ bağlantı, normal kanal, onaylı kanal ve yayınlama seçeneklerini içe aktarır.
+import type {
+  Channel,
+  ChannelModel,
+  ConfirmChannel,
+  Options,
+} from "amqplib";
 
 // Merkezi environment ayarlarını içe aktarır.
 import { env } from "../config/env.js";
 
-// Uygulamanın kullanacağı ana Topic Exchange adını belirler.
+// Ana event Exchange adını belirler.
 export const RABBITMQ_EXCHANGE = "policyflow.events";
 
-// RabbitMQ üzerinde oluşturulacak kuyrukları ve routing key değerlerini tanımlar.
+// Retry mesajlarının yönlendirileceği Exchange adını belirler.
+export const RABBITMQ_RETRY_EXCHANGE = "policyflow.retry";
+
+// Başarısız mesajların yönlendirileceği Exchange adını belirler.
+export const RABBITMQ_DLX_EXCHANGE = "policyflow.dlx";
+
+// Ana Consumer kuyruklarını ve routing key değerlerini tanımlar.
 const QUEUE_DEFINITIONS = [
   {
     name: "integration.sms.queue",
@@ -26,14 +40,71 @@ const QUEUE_DEFINITIONS = [
   },
 ] as const;
 
+// Her servis için gecikmeli Retry kuyruklarını tanımlar.
+const RETRY_QUEUE_DEFINITIONS = [
+  {
+    name: "integration.sms.retry.5s.queue",
+    routingKey: "integration.sms.retry.5s",
+    ttl: 5000,
+    targetQueue: "integration.sms.queue",
+  },
+  {
+    name: "integration.sms.retry.10s.queue",
+    routingKey: "integration.sms.retry.10s",
+    ttl: 10000,
+    targetQueue: "integration.sms.queue",
+  },
+  {
+    name: "integration.email.retry.5s.queue",
+    routingKey: "integration.email.retry.5s",
+    ttl: 5000,
+    targetQueue: "integration.email.queue",
+  },
+  {
+    name: "integration.email.retry.10s.queue",
+    routingKey: "integration.email.retry.10s",
+    ttl: 10000,
+    targetQueue: "integration.email.queue",
+  },
+  {
+    name: "integration.crm.retry.5s.queue",
+    routingKey: "integration.crm.retry.5s",
+    ttl: 5000,
+    targetQueue: "integration.crm.queue",
+  },
+  {
+    name: "integration.crm.retry.10s.queue",
+    routingKey: "integration.crm.retry.10s",
+    ttl: 10000,
+    targetQueue: "integration.crm.queue",
+  },
+] as const;
+
+// Her servis için Dead Letter Queue tanımlarını oluşturur.
+const DLQ_DEFINITIONS = [
+  {
+    name: "integration.sms.dlq",
+    routingKey: "integration.sms.dlq",
+  },
+  {
+    name: "integration.email.dlq",
+    routingKey: "integration.email.dlq",
+  },
+  {
+    name: "integration.crm.dlq",
+    routingKey: "integration.crm.dlq",
+  },
+] as const;
+
 // Her başarılı bağlantıdan sonra Consumer'ları başlatacak fonksiyon tipini tanımlar.
 type ChannelInitializer = (
   channel: Channel,
 ) => Promise<void>;
 
-// RabbitMQ bağlantısını ve kanalını saklar.
+// RabbitMQ bağlantısını ve kanallarını saklar.
 let connection: ChannelModel | null = null;
 let channel: Channel | null = null;
+let publisherChannel: ConfirmChannel | null = null;
 
 // Bağlantı durumlarını takip eder.
 let isConnected = false;
@@ -50,7 +121,7 @@ let onChannelReady: ChannelInitializer | undefined;
 const setupRabbitMQTopology = async (
   rabbitChannel: Channel,
 ): Promise<void> => {
-  // Topic Exchange oluşturur.
+  // Ana Topic Exchange'i oluşturur.
   await rabbitChannel.assertExchange(
     RABBITMQ_EXCHANGE,
     "topic",
@@ -59,7 +130,25 @@ const setupRabbitMQTopology = async (
     },
   );
 
-  // Her kuyruk için Queue ve Routing Binding oluşturur.
+  // Retry mesajları için Direct Exchange oluşturur.
+  await rabbitChannel.assertExchange(
+    RABBITMQ_RETRY_EXCHANGE,
+    "direct",
+    {
+      durable: true,
+    },
+  );
+
+  // Başarısız mesajlar için Dead Letter Exchange oluşturur.
+  await rabbitChannel.assertExchange(
+    RABBITMQ_DLX_EXCHANGE,
+    "direct",
+    {
+      durable: true,
+    },
+  );
+
+  // Ana Consumer kuyruklarını oluşturur ve Exchange'e bağlar.
   for (const queueDefinition of QUEUE_DEFINITIONS) {
     await rabbitChannel.assertQueue(
       queueDefinition.name,
@@ -68,7 +157,7 @@ const setupRabbitMQTopology = async (
       },
     );
 
-    // İlgili kuyruğu Exchange üzerine bağlar.
+    // İlgili ana kuyruğu Event Exchange'e bağlar.
     for (const routingKey of queueDefinition.routingKeys) {
       await rabbitChannel.bindQueue(
         queueDefinition.name,
@@ -78,7 +167,53 @@ const setupRabbitMQTopology = async (
     }
   }
 
-  console.log("[RABBITMQ] Exchange and queues are ready");
+  // TTL ve Dead Letter ayarlarıyla Retry kuyruklarını oluşturur.
+  for (const retryQueue of RETRY_QUEUE_DEFINITIONS) {
+    await rabbitChannel.assertQueue(
+      retryQueue.name,
+      {
+        durable: true,
+        arguments: {
+          // Mesajın Retry kuyruğunda bekleyeceği süreyi belirler.
+          "x-message-ttl": retryQueue.ttl,
+
+          // Süresi dolan mesajın varsayılan Exchange'e gönderilmesini sağlar.
+          "x-dead-letter-exchange": "",
+
+          // Süresi dolan mesajı ilgili ana kuyruğa yönlendirir.
+          "x-dead-letter-routing-key": retryQueue.targetQueue,
+        },
+      },
+    );
+
+    // Retry kuyruğunu Retry Exchange'e bağlar.
+    await rabbitChannel.bindQueue(
+      retryQueue.name,
+      RABBITMQ_RETRY_EXCHANGE,
+      retryQueue.routingKey,
+    );
+  }
+
+  // Başarısız mesajlar için DLQ kuyruklarını oluşturur.
+  for (const dlq of DLQ_DEFINITIONS) {
+    await rabbitChannel.assertQueue(
+      dlq.name,
+      {
+        durable: true,
+      },
+    );
+
+    // DLQ kuyruğunu Dead Letter Exchange'e bağlar.
+    await rabbitChannel.bindQueue(
+      dlq.name,
+      RABBITMQ_DLX_EXCHANGE,
+      dlq.routingKey,
+    );
+  }
+
+  console.log(
+    "[RABBITMQ] Exchanges, queues and bindings are ready",
+  );
 };
 
 // Bağlantı koptuğunda yeniden bağlantı işlemini zamanlar.
@@ -158,6 +293,7 @@ const establishConnection = async (): Promise<void> => {
 
       connection = null;
       channel = null;
+      publisherChannel = null;
       isConnected = false;
 
       console.warn("[RABBITMQ] Connection closed");
@@ -165,7 +301,7 @@ const establishConnection = async (): Promise<void> => {
       scheduleReconnect();
     });
 
-    // Yeni bağlantı üzerinden bir Channel oluşturur.
+    // Consumer işlemleri için normal bir Channel oluşturur.
     const rabbitChannel = await newConnection.createChannel();
 
     // Bağlantı oluşturulurken kapanma başladıysa Channel'ı kapatır.
@@ -185,7 +321,7 @@ const establishConnection = async (): Promise<void> => {
       console.error("[RABBITMQ] Channel error:", error);
     });
 
-    // Channel kapandığında bağlantının da yeniden kurulmasını sağlar.
+    // Consumer Channel kapandığında bağlantının yeniden kurulmasını sağlar.
     rabbitChannel.on("close", () => {
       if (channel !== rabbitChannel) {
         return;
@@ -194,7 +330,45 @@ const establishConnection = async (): Promise<void> => {
       channel = null;
       isConnected = false;
 
-      console.warn("[RABBITMQ] Channel closed");
+      console.warn("[RABBITMQ] Consumer channel closed");
+
+      if (!isShuttingDown) {
+        void newConnection.close().catch(() => undefined);
+      }
+    });
+
+    // Mesaj yayınlama onaylarını takip etmek için Confirm Channel oluşturur.
+    const rabbitPublisherChannel =
+      await newConnection.createConfirmChannel();
+
+    // Kapatma başladıysa veya bağlantı değiştiyse yeni kanalları kapatır.
+    if (
+      isShuttingDown ||
+      connection !== newConnection
+    ) {
+      await rabbitPublisherChannel.close().catch(() => undefined);
+      await rabbitChannel.close().catch(() => undefined);
+      return;
+    }
+
+    publisherChannel = rabbitPublisherChannel;
+
+    // Publisher Confirm Channel hatalarını takip eder.
+    rabbitPublisherChannel.on("error", (error: Error) => {
+      isConnected = false;
+      console.error("[RABBITMQ] Publisher channel error:", error);
+    });
+
+    // Publisher Channel kapandığında bağlantıyı yeniden kurar.
+    rabbitPublisherChannel.on("close", () => {
+      if (publisherChannel !== rabbitPublisherChannel) {
+        return;
+      }
+
+      publisherChannel = null;
+      isConnected = false;
+
+      console.warn("[RABBITMQ] Publisher channel closed");
 
       if (!isShuttingDown) {
         void newConnection.close().catch(() => undefined);
@@ -208,7 +382,8 @@ const establishConnection = async (): Promise<void> => {
     if (
       isShuttingDown ||
       connection !== newConnection ||
-      channel !== rabbitChannel
+      channel !== rabbitChannel ||
+      publisherChannel !== rabbitPublisherChannel
     ) {
       return;
     }
@@ -222,7 +397,8 @@ const establishConnection = async (): Promise<void> => {
     if (
       isShuttingDown ||
       connection !== newConnection ||
-      channel !== rabbitChannel
+      channel !== rabbitChannel ||
+      publisherChannel !== rabbitPublisherChannel
     ) {
       return;
     }
@@ -239,6 +415,7 @@ const establishConnection = async (): Promise<void> => {
     if (connection === rabbitConnection) {
       connection = null;
       channel = null;
+      publisherChannel = null;
     }
 
     // Hata oluştuğunda açık kalan RabbitMQ bağlantısını kapatır.
@@ -277,6 +454,148 @@ export const connectRabbitMQ = async (
   await establishConnection();
 };
 
+// Mesajı RabbitMQ'ya yayınlar ve broker onayını bekler.
+export const publishConfirmedMessage = async (
+  exchange: string,
+  routingKey: string,
+  content: Buffer,
+  options: Options.Publish = {},
+): Promise<void> => {
+  // Aktif Confirm Channel referansını alır.
+  const activePublisherChannel = publisherChannel;
+
+  // Publisher Channel yoksa mesajın yayınlanmasına izin vermez.
+  if (!activePublisherChannel) {
+    throw new Error(
+      "RabbitMQ Publisher Confirm Channel is not available.",
+    );
+  }
+
+  // Her yayınlama işlemi için benzersiz bir kimlik oluşturur.
+  const publishId = randomUUID();
+
+  // RabbitMQ tarafından geri döndürülen mesajı takip eder.
+  let isReturned = false;
+  let isSettled = false;
+
+  // Yayınlama sırasında kullanılan event listener'larını temizler.
+  const cleanup = (): void => {
+    activePublisherChannel.removeListener("return", onReturn);
+    activePublisherChannel.removeListener("close", onClose);
+  };
+
+  // Mesaj herhangi bir kuyruğa yönlendirilemezse bu event çalışır.
+  const onReturn = (returnedMessage: {
+    properties: {
+      headers?: Record<string, unknown>;
+    };
+  }): void => {
+    if (
+      returnedMessage.properties.headers?.[
+        "x-publish-confirm-id"
+      ] === publishId
+    ) {
+      isReturned = true;
+    }
+  };
+
+  // Onay gelmeden Publisher Channel kapanırsa işlemi başarısız sayar.
+  const onClose = (): void => {
+    if (isSettled) {
+      return;
+    }
+
+    isSettled = true;
+    cleanup();
+
+    rejectPublish(
+      new Error(
+        "RabbitMQ Publisher Channel closed before confirmation.",
+      ),
+    );
+  };
+
+  // Yayınlama işlemini Promise olarak yönetir.
+  let rejectPublish: (error: Error) => void;
+
+  const publishPromise = new Promise<void>((resolve, reject) => {
+    rejectPublish = reject;
+
+    // RabbitMQ'dan gelen unroutable mesajları takip eder.
+    activePublisherChannel.on("return", onReturn);
+
+    // Publisher Channel kapanırsa Promise'i reddeder.
+    activePublisherChannel.once("close", onClose);
+
+    try {
+      // Mesajı onay mekanizmasıyla RabbitMQ'ya gönderir.
+      activePublisherChannel.publish(
+        exchange,
+        routingKey,
+        content,
+        {
+          ...options,
+
+          // Mesajın broker tarafından kalıcı tutulmasını ister.
+          persistent: true,
+
+          // Mesajın herhangi bir kuyruğa yönlendirilememesi durumunda geri dönmesini ister.
+          mandatory: true,
+
+          // Her yayınlamayı diğerlerinden ayırt etmek için benzersiz header ekler.
+          headers: {
+            ...options.headers,
+            "x-publish-confirm-id": publishId,
+          },
+        },
+        (error) => {
+          if (isSettled) {
+            return;
+          }
+
+          isSettled = true;
+          cleanup();
+
+          // RabbitMQ mesajı reddederse işlemi başarısız sayar.
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          // Mesaj hiçbir kuyruğa yönlendirilemediyse hata fırlatır.
+          if (isReturned) {
+            reject(
+              new Error(
+                `RabbitMQ could not route message. Exchange: ${exchange}, Routing key: ${routingKey}`,
+              ),
+            );
+            return;
+          }
+
+          // Broker onayladı ve mesaj yönlendirilebildiyse başarılı tamamlar.
+          resolve();
+        },
+      );
+    } catch (error) {
+      if (isSettled) {
+        return;
+      }
+
+      isSettled = true;
+      cleanup();
+
+      reject(
+        error instanceof Error
+          ? error
+          : new Error(String(error)),
+      );
+    }
+  });
+
+  // Yayınlama işleminin onay sonucunu çağıran koda döndürür.
+  return publishPromise;
+};
+
 // RabbitMQ bağlantısının durumunu döndürür.
 export const isRabbitMQConnected = (): boolean => {
   return isConnected;
@@ -293,15 +612,24 @@ export const closeRabbitMQ = async (): Promise<void> => {
     reconnectTimer = null;
   }
 
-  // Aktif bağlantı ve kanal referanslarını geçici olarak saklar.
+  // Aktif kanal ve bağlantı referanslarını geçici olarak saklar.
+  const activePublisherChannel = publisherChannel;
   const activeChannel = channel;
   const activeConnection = connection;
 
   // Global bağlantı referanslarını temizler.
+  publisherChannel = null;
   channel = null;
   connection = null;
 
-  // Aktif Channel'ı kapatır.
+  // Publisher Confirm Channel'ı kapatır.
+  try {
+    await activePublisherChannel?.close();
+  } catch {
+    // Channel zaten kapanmış olabilir.
+  }
+
+  // Consumer Channel'ı kapatır.
   try {
     await activeChannel?.close();
   } catch {
