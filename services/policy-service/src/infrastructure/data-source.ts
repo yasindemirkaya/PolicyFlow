@@ -7,6 +7,7 @@ import { Policy } from "../entities/policy.entity.js";
 import { OutboxEvent } from "../entities/outbox-event.entity.js";
 
 import { CreateOutboxEvents1795445724093 } from "../migrations/1795445724093-CreateOutboxEvents.js";
+import { AddDestinationToOutboxEvents1795690000000 } from "../migrations/1795690000000-AddDestinationToOutboxEvents.js";
 
 // Policy Service'in PostgreSQL bağlantısını ve TypeORM yapılandırmasını oluşturur.
 const PolicyDataSource = new DataSource({
@@ -30,7 +31,10 @@ const PolicyDataSource = new DataSource({
   entities: [Policy, OutboxEvent],
 
   // Policy Service migration dosyalarını tanımlar.
-  migrations: [CreateOutboxEvents1795445724093],
+  migrations: [
+    CreateOutboxEvents1795445724093,
+    AddDestinationToOutboxEvents1795690000000
+  ],
 
   // Migration geçmişi için servise özel tablo kullanır.
   migrationsTableName: "policy_service_migrations",

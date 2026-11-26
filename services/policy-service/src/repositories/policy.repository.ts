@@ -5,6 +5,7 @@ import { Policy } from "../entities/policy.entity.js";
 import {
   OutboxEvent,
   OutboxEventStatus,
+  OutboxEventDestination,
 } from "../entities/outbox-event.entity.js";
 
 // Outbox event oluşturulurken kullanılacak bilgileri tanımlar.
@@ -66,22 +67,39 @@ export class PolicyRepository {
         policyRepository.create(data),
       );
 
-      // Kaydedilen poliçe bilgileriyle Outbox event oluşturur.
-      const outboxEvent = outboxRepository.create({
+      // Kaydedilen poliçeden event payload oluşturur.
+      const payload = eventInput.buildPayload(policy);
+
+      // RabbitMQ için Outbox event oluşturur.
+      const rabbitMQEvent = outboxRepository.create({
         eventType: eventInput.eventType,
         routingKey: eventInput.routingKey,
-        payload: eventInput.buildPayload(policy),
+        payload,
+        destination: OutboxEventDestination.RABBITMQ,
         status: OutboxEventStatus.PENDING,
         attempts: 0,
         lastError: null,
         publishedAt: null,
       });
 
-      // Outbox event'ini aynı transaction içerisinde kaydeder.
-      await outboxRepository.save(outboxEvent);
+      // Kafka için Outbox event oluşturur.
+      const kafkaEvent = outboxRepository.create({
+        eventType: eventInput.eventType,
+        routingKey: eventInput.routingKey,
+        payload,
+        destination: OutboxEventDestination.KAFKA,
+        status: OutboxEventStatus.PENDING,
+        attempts: 0,
+        lastError: null,
+        publishedAt: null,
+      });
+
+      // Her iki event'i aynı transaction içerisinde kaydeder.
+      await outboxRepository.save([rabbitMQEvent, kafkaEvent]);
 
       // Transaction tamamlandığında oluşturulan poliçeyi döndürür.
       return policy;
     });
   }
+
 }

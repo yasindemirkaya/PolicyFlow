@@ -5,6 +5,7 @@ import PolicyDataSource from "../infrastructure/data-source.js";
 import {
   OutboxEvent,
   OutboxEventStatus,
+  OutboxEventDestination,
 } from "../entities/outbox-event.entity.js";
 
 // RabbitMQ Publisher metodunu içe aktarır.
@@ -28,6 +29,7 @@ const processPendingEvents = async (): Promise<void> => {
     const pendingEvents = await repository.find({
       where: {
         status: OutboxEventStatus.PENDING,
+        destination: OutboxEventDestination.RABBITMQ,
       },
       order: {
         createdAt: "ASC",

@@ -4,6 +4,7 @@
 // Bunun önüne geçmek için Outbox Pattern kullanıyoruz.
 
 // Outbox Entity, RabbitMQ'ya gönderilmeyi bekleyen event'leri PostgreSQL'de saklayacağımız tablonun modelidir.
+// Aynı zamanda Kafka gibi diğer mesajlaşma sistemleri için de kullanılabilir. Bu nedenle, event'in hangi sistemde kullanılacağını belirtmek için destination alanını ekledik.
 
 import {
   Entity,
@@ -19,6 +20,12 @@ export enum OutboxEventStatus {
   PUBLISHED = "PUBLISHED",
 }
 
+// Event'in RabbitMQ için mi yoksa Kafka için mi kullanılacağını belirtir.
+export enum OutboxEventDestination {
+  RABBITMQ = "RABBITMQ",
+  KAFKA = "KAFKA",
+}
+
 @Entity("outbox_events")
 export class OutboxEvent {
   // Her event için benzersiz UUID oluşturur.
@@ -32,6 +39,14 @@ export class OutboxEvent {
     length: 100,
   })
   eventType!: string;
+
+  // Event'in hangi sistemde kullanılacağını belirtir (RabbitMQ veya Kafka).
+  @Column({
+    type: "varchar",
+    length: 20,
+    default: OutboxEventDestination.RABBITMQ,
+  })
+  destination!: OutboxEventDestination;
 
   // RabbitMQ üzerinde kullanılacak routing key değerini tutar.
   @Column({

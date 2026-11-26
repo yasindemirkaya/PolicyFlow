@@ -53,6 +53,13 @@ export const env = {
     vhost: process.env.RABBITMQ_VHOST || "policyflow",
   },
 
+  // Kafka bağlantı bilgilerini merkezi environment yapılandırmasına ekler.
+  kafka: {
+    brokers: (process.env.KAFKA_BROKERS || "policyflow-kafka:9092")
+      .split(",")
+      .map((broker) => broker.trim()),
+  },
+
   customerServiceUrl: getRequiredEnv("CUSTOMER_SERVICE_URL"),
   productServiceUrl: getRequiredEnv("PRODUCT_SERVICE_URL"),
 };
