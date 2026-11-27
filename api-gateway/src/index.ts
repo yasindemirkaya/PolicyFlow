@@ -55,6 +55,11 @@ const services = [
     name: "Policy Service",
     target: requiredEnv("POLICY_SERVICE_URL"),
     pathFilter: "/api/policies"
+  },
+  {
+    name: "Analytics Service",
+    target: requiredEnv("ANALYTICS_SERVICE_URL"),
+    pathFilter: "/api/analytics"
   }
 ] as const;
 
