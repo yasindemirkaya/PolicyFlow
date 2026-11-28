@@ -18,6 +18,12 @@ interface PolicyIssuedEvent {
   };
 }
 
+interface GetIssueAnalyticsOptions {
+  limit: number;
+  offset: number;
+}
+
+// Kafka üzerinden gelen poliçe kesim event'ini analitik tablosuna kaydeder.
 export const saveIssuedPolicyAnalytics = async (
   eventId: string,
   event: PolicyIssuedEvent
@@ -45,7 +51,11 @@ export const saveIssuedPolicyAnalytics = async (
     data.productName,
   ];
 
-  if (requiredFields.some((value) => typeof value !== "string" || !value.trim())) {
+  if (
+    requiredFields.some(
+      (value) => typeof value !== "string" || !value.trim()
+    )
+  ) {
     throw new Error("Policy issued event contains missing required fields");
   }
 
@@ -84,4 +94,31 @@ export const saveIssuedPolicyAnalytics = async (
     .values(analyticsRecord)
     .orIgnore()
     .execute();
+};
+
+// Poliçe analitik kayıtlarını pagination ile listeler.
+export const getIssueAnalytics = async ({
+  limit,
+  offset,
+}: GetIssueAnalyticsOptions) => {
+  const repository = AnalyticsDataSource.getRepository(IssueAnalytics);
+
+  const [records, total] = await repository.findAndCount({
+    order: {
+      createdAt: "DESC",
+    },
+    take: limit,
+    skip: offset,
+  });
+
+  return {
+    records,
+    meta: {
+      total,
+      limit,
+      offset,
+      totalPages: Math.ceil(total / limit),
+      currentPage: Math.floor(offset / limit) + 1,
+    },
+  };
 };

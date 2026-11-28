@@ -11,6 +11,8 @@ import {
   disconnectKafkaConsumer,
 } from "./infrastructure/kafka.consumer.js";
 
+import analyticsRoutes from "./routes/index.js";
+
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -36,6 +38,9 @@ app.get("/api/analytics/health", (_req: Request, res: Response) => {
     status: "healthy",
   });
 });
+
+// Analytics API route'ları.
+app.use("/api/analytics", analyticsRoutes);
 
 // Uygulamayı başlat.
 const startServer = async (): Promise<void> => {
