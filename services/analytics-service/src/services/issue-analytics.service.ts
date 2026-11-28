@@ -3,6 +3,8 @@ import { validate as isValidUUID } from "uuid";
 import AnalyticsDataSource from "../infrastructure/data-source.js";
 import { IssueAnalytics } from "../entities/issue-analytics.entity.js";
 
+type AnalyticsPeriod = "1d" | "7d" | "30d";
+
 interface PolicyIssuedEvent {
   event: "policy.issued";
   data: {
@@ -19,6 +21,8 @@ interface PolicyIssuedEvent {
 }
 
 interface GetIssueAnalyticsOptions {
+  period: AnalyticsPeriod;
+  productType?: string;
   limit: number;
   offset: number;
 }
@@ -96,20 +100,41 @@ export const saveIssuedPolicyAnalytics = async (
     .execute();
 };
 
-// Poliçe analitik kayıtlarını pagination ile listeler.
+// Poliçe analitik kayıtlarını tarih ve ürün kategorisine göre sayfalı listeler.
 export const getIssueAnalytics = async ({
+  period,
+  productType,
   limit,
   offset,
 }: GetIssueAnalyticsOptions) => {
+  const periodInHours: Record<AnalyticsPeriod, number> = {
+    "1d": 24,
+    "7d": 24 * 7,
+    "30d": 24 * 30,
+  };
+
+  const hours = periodInHours[period];
+
   const repository = AnalyticsDataSource.getRepository(IssueAnalytics);
 
-  const [records, total] = await repository.findAndCount({
-    order: {
-      createdAt: "DESC",
-    },
-    take: limit,
-    skip: offset,
-  });
+  const query = repository
+    .createQueryBuilder("analytics")
+    .where(
+      "analytics.created_at >= NOW() - (:hours * INTERVAL '1 hour')",
+      { hours }
+    );
+
+  if (productType) {
+    query.andWhere("analytics.policy_type = :productType", {
+      productType,
+    });
+  }
+
+  const [records, total] = await query
+    .orderBy("analytics.created_at", "DESC")
+    .take(limit)
+    .skip(offset)
+    .getManyAndCount();
 
   return {
     records,
@@ -119,6 +144,8 @@ export const getIssueAnalytics = async ({
       offset,
       totalPages: Math.ceil(total / limit),
       currentPage: Math.floor(offset / limit) + 1,
+      period,
+      productType: productType ?? null,
     },
   };
 };

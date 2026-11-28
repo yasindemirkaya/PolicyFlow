@@ -5,13 +5,38 @@ import { getIssueAnalytics as getIssueAnalyticsService } from "../services/issue
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
+const ALLOWED_PERIODS = ["1d", "7d", "30d"] as const;
+
 export const getIssueAnalytics = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
+    const { period, productType } = req.query;
     const limitParam = req.query.limit;
     const offsetParam = req.query.offset;
+
+    if (
+      typeof period !== "string" ||
+      !ALLOWED_PERIODS.includes(period as (typeof ALLOWED_PERIODS)[number])
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Period is required and must be 1d, 7d or 30d.",
+      });
+      return;
+    }
+
+    if (
+      productType !== undefined &&
+      (typeof productType !== "string" || !productType.trim())
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid productType.",
+      });
+      return;
+    }
 
     const limit =
       limitParam === undefined
@@ -42,6 +67,8 @@ export const getIssueAnalytics = async (
     }
 
     const result = await getIssueAnalyticsService({
+      period: period as "1d" | "7d" | "30d",
+      productType: productType as string | undefined,
       limit,
       offset,
     });
@@ -52,10 +79,7 @@ export const getIssueAnalytics = async (
       meta: result.meta,
     });
   } catch (error) {
-    console.error(
-      "[Analytics] Failed to fetch issue analytics:",
-      error
-    );
+    console.error("[Analytics] Failed to fetch issue analytics:", error);
 
     res.status(500).json({
       success: false,
