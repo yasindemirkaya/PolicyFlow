@@ -1,12 +1,21 @@
 
 import type { Request, Response } from "express";
-import { getIssueAnalytics as getIssueAnalyticsService } from "../services/issue-analytics.service.js";
+
+import {
+  getIssueAnalytics as getIssueAnalyticsService,
+  getIssueAnalyticsSummary as getIssueAnalyticsSummaryService,
+} from "../services/issue-analytics.service.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
 const ALLOWED_PERIODS = ["1d", "7d", "30d"] as const;
+const ALLOWED_PRODUCT_TYPES = ["VEHICLE", "HOME", "HEALTH"] as const;
 
+type AnalyticsPeriod = (typeof ALLOWED_PERIODS)[number];
+type ProductType = (typeof ALLOWED_PRODUCT_TYPES)[number];
+
+// Poliçe analitik kayıtlarını sayfalı olarak listeler.
 export const getIssueAnalytics = async (
   req: Request,
   res: Response
@@ -18,7 +27,7 @@ export const getIssueAnalytics = async (
 
     if (
       typeof period !== "string" ||
-      !ALLOWED_PERIODS.includes(period as (typeof ALLOWED_PERIODS)[number])
+      !ALLOWED_PERIODS.includes(period as AnalyticsPeriod)
     ) {
       res.status(400).json({
         success: false,
@@ -29,11 +38,12 @@ export const getIssueAnalytics = async (
 
     if (
       productType !== undefined &&
-      (typeof productType !== "string" || !productType.trim())
+      (typeof productType !== "string" ||
+        !ALLOWED_PRODUCT_TYPES.includes(productType as ProductType))
     ) {
       res.status(400).json({
         success: false,
-        message: "Invalid productType.",
+        message: "ProductType must be VEHICLE, HOME or HEALTH.",
       });
       return;
     }
@@ -67,8 +77,8 @@ export const getIssueAnalytics = async (
     }
 
     const result = await getIssueAnalyticsService({
-      period: period as "1d" | "7d" | "30d",
-      productType: productType as string | undefined,
+      period: period as AnalyticsPeriod,
+      productType: productType as ProductType | undefined,
       limit,
       offset,
     });
@@ -84,6 +94,59 @@ export const getIssueAnalytics = async (
     res.status(500).json({
       success: false,
       message: "Failed to retrieve issue analytics.",
+    });
+  }
+};
+
+// Poliçe analitik özetini tarih ve ürün kategorisine göre getirir.
+export const getIssueAnalyticsSummary = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { period, productType } = req.query;
+
+    if (
+      typeof period !== "string" ||
+      !ALLOWED_PERIODS.includes(period as AnalyticsPeriod)
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Period is required and must be 1d, 7d or 30d.",
+      });
+      return;
+    }
+
+    if (
+      productType !== undefined &&
+      (typeof productType !== "string" ||
+        !ALLOWED_PRODUCT_TYPES.includes(productType as ProductType))
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "ProductType must be VEHICLE, HOME or HEALTH.",
+      });
+      return;
+    }
+
+    const result = await getIssueAnalyticsSummaryService({
+      period: period as AnalyticsPeriod,
+      productType: productType as ProductType | undefined,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error(
+      "[Analytics] Failed to fetch issue analytics summary:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve issue analytics summary.",
     });
   }
 };

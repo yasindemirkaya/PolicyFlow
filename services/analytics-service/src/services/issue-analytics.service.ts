@@ -27,6 +27,17 @@ interface GetIssueAnalyticsOptions {
   offset: number;
 }
 
+interface GetIssueAnalyticsSummaryOptions {
+  period: AnalyticsPeriod;
+  productType?: string;
+}
+
+const PERIOD_IN_HOURS: Record<AnalyticsPeriod, number> = {
+  "1d": 24,
+  "7d": 24 * 7,
+  "30d": 24 * 30,
+};
+
 // Kafka üzerinden gelen poliçe kesim event'ini analitik tablosuna kaydeder.
 export const saveIssuedPolicyAnalytics = async (
   eventId: string,
@@ -100,28 +111,18 @@ export const saveIssuedPolicyAnalytics = async (
     .execute();
 };
 
-// Poliçe analitik kayıtlarını tarih ve ürün kategorisine göre sayfalı listeler.
-export const getIssueAnalytics = async ({
-  period,
-  productType,
-  limit,
-  offset,
-}: GetIssueAnalyticsOptions) => {
-  const periodInHours: Record<AnalyticsPeriod, number> = {
-    "1d": 24,
-    "7d": 24 * 7,
-    "30d": 24 * 30,
-  };
-
-  const hours = periodInHours[period];
-
+// Ortak tarih ve ürün kategorisi filtrelerini uygular.
+const buildFilteredQuery = (
+  period: AnalyticsPeriod,
+  productType?: string
+) => {
   const repository = AnalyticsDataSource.getRepository(IssueAnalytics);
 
   const query = repository
     .createQueryBuilder("analytics")
     .where(
       "analytics.created_at >= NOW() - (:hours * INTERVAL '1 hour')",
-      { hours }
+      { hours: PERIOD_IN_HOURS[period] }
     );
 
   if (productType) {
@@ -129,6 +130,18 @@ export const getIssueAnalytics = async ({
       productType,
     });
   }
+
+  return query;
+};
+
+// Poliçe analitik kayıtlarını tarih ve ürün kategorisine göre sayfalı listeler.
+export const getIssueAnalytics = async ({
+  period,
+  productType,
+  limit,
+  offset,
+}: GetIssueAnalyticsOptions) => {
+  const query = buildFilteredQuery(period, productType);
 
   const [records, total] = await query
     .orderBy("analytics.created_at", "DESC")
@@ -147,5 +160,70 @@ export const getIssueAnalytics = async ({
       period,
       productType: productType ?? null,
     },
+  };
+};
+
+// Poliçe analitik verilerinin özetini ve dağılımlarını getirir.
+export const getIssueAnalyticsSummary = async ({
+  period,
+  productType,
+}: GetIssueAnalyticsSummaryOptions) => {
+  const summaryQuery = buildFilteredQuery(period, productType)
+    .select("COUNT(analytics.id)", "totalPolicies")
+    .addSelect(
+      "COALESCE(SUM(analytics.premium_amount), 0)",
+      "totalPremium"
+    )
+    .addSelect(
+      "COALESCE(AVG(analytics.premium_amount), 0)",
+      "averagePremium"
+    );
+
+  const companyQuery = buildFilteredQuery(period, productType)
+    .select("analytics.insurance_company_name", "insuranceCompanyName")
+    .addSelect("COUNT(analytics.id)", "totalPolicies")
+    .addSelect(
+      "COALESCE(SUM(analytics.premium_amount), 0)",
+      "totalPremium"
+    )
+    .groupBy("analytics.insurance_company_name")
+    .orderBy("SUM(analytics.premium_amount)", "DESC");
+
+  const productQuery = buildFilteredQuery(period, productType)
+    .select("analytics.product_name", "productName")
+    .addSelect("COUNT(analytics.id)", "totalPolicies")
+    .addSelect(
+      "COALESCE(SUM(analytics.premium_amount), 0)",
+      "totalPremium"
+    )
+    .groupBy("analytics.product_name")
+    .orderBy("SUM(analytics.premium_amount)", "DESC");
+
+  const [summary, companies, products] = await Promise.all([
+    summaryQuery.getRawOne(),
+    companyQuery.getRawMany(),
+    productQuery.getRawMany(),
+  ]);
+
+  return {
+    filters: {
+      period,
+      productType: productType ?? null,
+    },
+    totals: {
+      totalPolicies: Number(summary?.totalPolicies ?? 0),
+      totalPremium: Number(summary?.totalPremium ?? 0).toFixed(2),
+      averagePremium: Number(summary?.averagePremium ?? 0).toFixed(2),
+    },
+    byInsuranceCompany: companies.map((company) => ({
+      insuranceCompanyName: company.insuranceCompanyName,
+      totalPolicies: Number(company.totalPolicies),
+      totalPremium: Number(company.totalPremium).toFixed(2),
+    })),
+    byProduct: products.map((product) => ({
+      productName: product.productName,
+      totalPolicies: Number(product.totalPolicies),
+      totalPremium: Number(product.totalPremium).toFixed(2),
+    })),
   };
 };
