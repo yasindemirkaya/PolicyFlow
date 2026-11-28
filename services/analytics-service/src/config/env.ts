@@ -1,3 +1,4 @@
+
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,9 +19,7 @@ const getNumberEnv = (
 ): number => {
   const value = process.env[key];
 
-  if (!value) {
-    return defaultValue;
-  }
+  if (!value) return defaultValue;
 
   const parsedValue = Number(value);
 
@@ -42,5 +41,11 @@ export const env = {
     username: getRequiredEnv("DB_USERNAME"),
     password: getRequiredEnv("DB_PASSWORD"),
     name: getRequiredEnv("DB_NAME"),
+  },
+
+  kafka: {
+    brokers: getRequiredEnv("KAFKA_BROKERS")
+      .split(",")
+      .map((broker) => broker.trim()),
   },
 };

@@ -1,9 +1,15 @@
 
 import express from "express";
 import type { Request, Response } from "express";
+
 import connectDatabase, {
   closeDatabase,
 } from "./infrastructure/database.js";
+
+import {
+  connectKafkaConsumer,
+  disconnectKafkaConsumer,
+} from "./infrastructure/kafka.consumer.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -34,28 +40,47 @@ app.get("/api/analytics/health", (_req: Request, res: Response) => {
 // Uygulamayı başlat.
 const startServer = async (): Promise<void> => {
   try {
+    // Önce PostgreSQL bağlantısını kur.
     await connectDatabase();
 
+    // Ardından Kafka Consumer bağlantısını kur ve dinlemeyi başlat.
+    await connectKafkaConsumer();
+
+    // Her iki bağlantı da başarılıysa HTTP sunucusunu başlat.
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Analytics Service is running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Analytics Service startup failed:", error);
-    process.exit(1);
+    await shutdown(1);
   }
 };
 
-// Uygulama kapanırken veritabanı bağlantısını kapat.
-const shutdown = async (): Promise<void> => {
+// Uygulama kapanırken kaynakları temizle.
+let isShuttingDown = false;
+
+const shutdown = async (exitCode = 0): Promise<void> => {
+  if (isShuttingDown) return;
+
+  isShuttingDown = true;
+
   console.log("[Analytics Service] Shutting down...");
 
   try {
-    await closeDatabase();
-    process.exit(0);
+    await disconnectKafkaConsumer();
   } catch (error) {
-    console.error("[Analytics Service] Shutdown failed:", error);
-    process.exit(1);
+    console.error("[Kafka] Shutdown error:", error);
+    exitCode = 1;
   }
+
+  try {
+    await closeDatabase();
+  } catch (error) {
+    console.error("[Database] Shutdown error:", error);
+    exitCode = 1;
+  }
+
+  process.exit(exitCode);
 };
 
 process.on("SIGINT", () => {
